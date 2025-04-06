@@ -70,10 +70,10 @@
   <h1>Code Music (where music blends with programming)</h1>
   <p>Press play to hear the lively theme and see the visualizer:</p>
   
-  <!-- Starry sky visualizer -->
+  <!-- Starry sky visualizer ->
   <canvas id="visualizer"></canvas>
   
-  <!-- Editor -->
+  <!-- Editor ->
   <div id="editor">
 // -- Drums -->
 if (idx % 2 === 0) {
@@ -88,7 +88,7 @@ if ([2, 6, 10, 14].indexOf(idx) >= 0) {
   p1.get('snare').triggerAttackRelease('8n');
 }
 
-// -- Synths -->
+// -- Synths ->
 var harryPotterChords = [
   ['E3', 'G3', 'B3'],
   ['G3', 'B3', 'D4'],
@@ -103,7 +103,7 @@ if (chordIndex >= 0) {
   polySynth.triggerAttackRelease(harryPotterChords[chordIndex], '8n');
 }
 
-// -- Melody with Variation -->
+// -- Melody with Variation ->
 var melodyPatterns = [
   ['B4', 'A4', 'G4', 'E4', 'D4', 'C4', 'B3'],
   ['E4', 'D4', 'C4', 'B4', 'A4', 'G4', 'F#4'],
