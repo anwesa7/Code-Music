@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Music</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.34/Tone.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: radial-gradient(circle at bottom, #000428, #004e92);
+      color: white;
+    }
+    #editor {
+      height: 300px;
+      width: 100%;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #output {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      height: 100px;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 150px;
+      border: 1px solid #ccc;
+    }
+    #banner {
+      height: 40px;
+      width: 150px;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+      position: fixed;
+      right: 10px;
+      top: 10px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 5px;
+      background-color: rgba(51, 51, 51, 0.9);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    #banner a {
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      color: #FFF;
+      text-decoration: none;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Code Music (where music blends with programming)</h1>
+  <p>Press play to hear the lively theme and see the visualizer:</p>
+  
+  <!-- Starry sky visualizer -->
+  <canvas id="visualizer"></canvas>
+  
+  <!-- Editor -->
+  <div id="editor">
+// -- Drums -->
+if (idx % 2 === 0) {
+  p1.get('triangle').triggerAttackRelease('C5', '8n');
+}
+
+if ([0, 4, 8, 12].indexOf(idx) >= 0) {
+  p1.get('kick').triggerAttackRelease('C2', '8n');
+}
+
+if ([2, 6, 10, 14].indexOf(idx) >= 0) {
+  p1.get('snare').triggerAttackRelease('8n');
+}
+
+// -- Synths -->
+var harryPotterChords = [
+  ['E3', 'G3', 'B3'],
+  ['G3', 'B3', 'D4'],
+  ['C3', 'E3', 'G3'],
+  ['A3', 'C4', 'E4'],
+  ['D4', 'F#4', 'A4'],
+  ['B3', 'D4', 'F#4']
+];
+
+var chordIndex = Math.floor((idx / 4) % harryPotterChords.length);
+if (chordIndex >= 0) {
+  polySynth.triggerAttackRelease(harryPotterChords[chordIndex], '8n');
+}
+
+// -- Melody with Variation -->
+var melodyPatterns = [
+  ['B4', 'A4', 'G4', 'E4', 'D4', 'C4', 'B3'],
+  ['E4', 'D4', 'C4', 'B4', 'A4', 'G4', 'F#4'],
+  ['A4', 'B4', 'C5', 'D5', 'E5', 'D5', 'C5'],
+  ['B4', 'G4', 'E4', 'C4', 'D4', 'B4', 'A4']
+];
+
+var currentPattern = Math.floor((idx / (16 * 4)) % melodyPatterns.length);
+if (currentPattern >= 0) {
+  leadSynth.triggerAttackRelease(melodyPatterns[currentPattern][idx % melodyPatterns[currentPattern].length], '16n');
+}
+  </div>
+  
+  <button onclick="playMusic()">Play Music</button>
+  <button onclick="stopMusic()">Stop Music</button>
+
+  <h2>Output</h2>
+  <div id="output"><code></code></div>
+
+  <!-- UNDER CONSTRUCTION BANNER -->
+  <div id="banner"><a href="">Under construction</a></div>
+
+  <script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/javascript");
+
+    let synthType = 'sine';
+    const polySynth = new Tone.PolySynth({
+      oscillator: { type: synthType },
+      envelope: { attack: 0.5, decay: 0.1, sustain: 0.5, release: 1.5 }
+    }).toDestination();
+    
+    const leadSynth = new Tone.Synth({
+      oscillator: { type: 'sawtooth' },
+      envelope: { attack: 0.5, decay: 0.1, sustain: 0.5, release: 1.5 }
+    }).toDestination();
+    
+    const kick = new Tone.MembraneSynth().toDestination();
+    const snare = new Tone.NoiseSynth({ noise: { type: 'white' } }).toDestination();
+    const triangle = new Tone.MetalSynth().toDestination();
+
+    let idx = 0;
+    const maxIndex = 50 * 16;
+    let loop; // Declare loop variable globally
+
+    const p1 = {
+      get: function (sound) {
+        switch (sound) {
+          case 'kick': return kick;
+          case 'snare': return snare;
+          case 'triangle': return triangle;
+        }
+      }
+    };
+
+    const analyser = Tone.context.createAnalyser();
+    analyser.fftSize = 256;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    Tone.Master.connect(analyser);
+
+    const canvas = document.getElementById('visualizer');
+    const canvasCtx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    canvasCtx.scale(dpr, dpr);
+    const WIDTH = canvas.width / dpr;
+    const HEIGHT = canvas.height / dpr;
+
+    const numStars = 150;
+    const stars = Array.from({ length: numStars }, () => ({
+      x: Math.random() * WIDTH,
+      y: Math.random() * HEIGHT,
+      radius: Math.random() * 1.5 + 0.5,
+    }));
+
+    function drawStars() {
+      stars.forEach(star => {
+        canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        canvasCtx.beginPath();
+        canvasCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        canvasCtx.fill();
+      });
+    }
+
+    function drawVisualizer() {
+      requestAnimationFrame(drawVisualizer);
+      analyser.getByteFrequencyData(dataArray);
+      canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+      drawStars();
+
+      const barWidth = (WIDTH / bufferLength) * 2.5;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = dataArray[i];
+        canvasCtx.fillStyle = 'rgba(' + (barHeight + 100) + ',50,50)';
+        canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
+        x += barWidth + 1;
+      }
+    }
+
+    drawVisualizer();
+
+    function changeTone() {
+      const timeElapsed = (idx / 16) * 0.5;
+      const toneChanges = ['sine', 'square', 'triangle', 'sawtooth', 'fmsquare', 'fmsawtooth'];
+      synthType = toneChanges[Math.floor((timeElapsed / 8) % toneChanges.length)];
+      polySynth.set({ oscillator: { type: synthType } });
+    }
+
+    function updateOutput(message) {
+      const outputDiv = document.getElementById('output');
+      const outputCode = outputDiv.querySelector('code');
+      outputCode.textContent += message + "\n";
+      outputDiv.scrollTop = outputDiv.scrollHeight; // Auto-scroll to the latest log
+    }
+
+    function playMusic() {
+      idx = 0; // Reset index
+      updateOutput("Music started"); // Log the start of the music
+      
+      loop = new Tone.Loop(time => {
+        idx++;
+        updateOutput("Iteration: " + idx); // Log each iteration
+        
+        changeTone();
+
+        // Update dynamic pattern logic here
+        const code = editor.getValue();
+        try {
+          eval(code); // Executes code from editor
+        } catch (error) {
+          updateOutput("Error: " + error.message); // Log any errors in the code
+        }
+
+        if (idx >= maxIndex) {
+          stopMusic();
+          updateOutput("Music stopped"); // Log the end of the music
+        }
+      }, '8n').start(0);
+      
+      Tone.Transport.start();
+    }
+
+    function stopMusic() {
+      if (loop) {
+        loop.stop(); // Properly stop the loop
+        Tone.Transport.stop();
+        updateOutput("Music stopped"); // Log the stopping of the music
+      }
+    }
+  </script>
+</body>
+</html>
